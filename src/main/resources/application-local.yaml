@@ -1,6 +1,6 @@
 spring:
   application:
-    name: notification-service
+    name: catalog-service
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/postgres?prepareThreshold=0
     username: ${DB_USER}
@@ -20,31 +20,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  mail:
-    port: 587
-    host: 'smtp.gmail.com'
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PWD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-        debug: false
-        transport:
-          protocol: 'smtp'
   output:
     ansi:
       enabled: ALWAYS
 
 server:
-  port: 8081
-
-cookies:
-  secure: true
-  sameSite: None
-  httpOnly: true
+  port: 8082
 
 logging:
   level:
