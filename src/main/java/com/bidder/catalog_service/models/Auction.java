@@ -1,9 +1,11 @@
-package models.entities;
+package com.bidder.catalog_service.models;
 
+import com.bidder.catalog_service.utils.Constants;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import utils.Constants;
+import enums.AuctionCategory;
+import enums.AuctionStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,9 +30,10 @@ public class Auction extends BaseEntity {
 //	@Length(max = 128)
 	private String title;
 
-//	@ManyToOne
-//	@JoinColumn(name = "owner_id")
-//	private AppUser owner;
+	// References AppUser.id owned by identity-auth-service; no cross-service JPA relation
+	@NotNull
+	@Column(name = "owner_id")
+	private UUID ownerId;
 
 	@OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Item> items;

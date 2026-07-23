@@ -1,4 +1,4 @@
-package models.entities;
+package com.bidder.catalog_service.models;
 
 import jakarta.persistence.MappedSuperclass;
 import lombok.AllArgsConstructor;
