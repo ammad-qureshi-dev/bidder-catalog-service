@@ -39,6 +39,9 @@ public class Item extends BaseEntity {
 	@DecimalMin("0.0")
 	private BigDecimal priceSoldAt;
 
+	private UUID highestBidId;
+	private BigDecimal highestBidAmount;
+
 	// For optimistic locking
 	@Version
 	private Long version;

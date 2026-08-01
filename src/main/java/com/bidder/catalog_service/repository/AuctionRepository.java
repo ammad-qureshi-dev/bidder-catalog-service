@@ -17,7 +17,7 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 	@Query("""
 			select a
 			from Auction a
-			where a.auctionStatus <> models.entities.AuctionStatus.CLOSED
+			where a.auctionStatus <> enums.AuctionStatus.CLOSED
 			and a.endTime <= CURRENT_TIMESTAMP
 			""")
 	List<Auction> findOpenAndPausedAuctions();

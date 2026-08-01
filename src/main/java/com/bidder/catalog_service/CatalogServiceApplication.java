@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @SpringBootApplication
-@EntityScan(basePackages = "models.entities")
+@EntityScan(basePackages = "com.bidder.catalog_service.models")
 @EnableJpaRepositories(basePackages = "com.bidder.catalog_service.repository")
 public class CatalogServiceApplication {
 

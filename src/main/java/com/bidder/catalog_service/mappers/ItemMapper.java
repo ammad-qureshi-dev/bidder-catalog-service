@@ -21,7 +21,7 @@ public class ItemMapper {
 		}
 
 		return new ItemResponse(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getMinimumPrice(),
-				entity.getPriceSoldAt());
+				entity.getPriceSoldAt(), entity.getHighestBidId(), entity.getHighestBidAmount());
 	}
 
 	public static ItemSummaryResponse entityToSummary(Item i) {
