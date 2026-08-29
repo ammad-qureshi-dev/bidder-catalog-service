@@ -6,7 +6,8 @@ plugins {
 }
 
 group = 'com.bidder'
-version = '0.0.3'
+version = '0.0.4'
+description = 'updated auction status OPEN to LIVE'
 
 java {
     toolchain {

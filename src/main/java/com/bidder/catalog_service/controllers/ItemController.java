@@ -11,10 +11,8 @@ import dtos.response.ItemResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
-import static com.bidder.catalog_service.utils.Constants.Controller.*;
-
 @RestController
-@RequestMapping(BASE_URI_V1 + "/item")
+@RequestMapping("/api/v1/item")
 @RequiredArgsConstructor
 public class ItemController {
 

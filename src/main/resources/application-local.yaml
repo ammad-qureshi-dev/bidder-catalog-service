@@ -13,7 +13,7 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
       naming:
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
@@ -31,3 +31,6 @@ logging:
   level:
     root: info
     com.bidder.catalog-service: info
+
+feature-flag:
+    run-close-auction-schedule-job: false
