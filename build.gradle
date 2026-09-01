@@ -51,6 +51,7 @@ dependencies {
 	implementation 'org.springframework.kafka:spring-kafka'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-restclient'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -69,7 +70,11 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 
-//	implementation 'com.bidder:identity-auth-service:0.0.3'
+	implementation 'com.bidder:common-model:0.0.3-SNAPSHOT'
+	implementation 'com.bidder:notifications-model:2.1.4'
+	implementation 'com.bidder:identity-auth-service:0.0.5'
+	implementation 'com.bidder:bidding-model:0.0.2'
+
 }
 
 tasks.named('test') {

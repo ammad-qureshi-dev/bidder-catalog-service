@@ -23,9 +23,29 @@ spring:
   output:
     ansi:
       enabled: ALWAYS
+  kafka:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      consumer:
+        group-id: auth-service
+        auto-offset-reset: earliest
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 server:
   port: 8082
+
+client-url: http://localhost:3000
+
+internal-services:
+    bidding-service: http://localhost:8083
+    identity-and-auth-service: http://localhost:8084
+
+bidding-service:
+    search: /api/v1/bid/search
+
+identity-and-auth-service:
+    get-preferred-contact-methods: /api/v1/app-user/internal/contacts/preferred-contact-methods
+    get-user-by-id: /api/v1/app-user/{appUserId}
 
 logging:
   level:

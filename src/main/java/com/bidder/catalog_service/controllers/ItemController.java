@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import com.bidder.catalog_service.models.response.ApiResponse;
 import com.bidder.catalog_service.services.ItemService;
+import dtos.request.UpdatedBidRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import dtos.response.ItemResponse;
 import org.springframework.web.bind.annotation.*;
@@ -22,5 +24,12 @@ public class ItemController {
 	public ResponseEntity<ApiResponse<ItemResponse>> getItem(@PathVariable UUID itemId) {
 		var item = itemService.getItem(itemId);
 		return ResponseEntity.ok().body(ApiResponse.<ItemResponse>builder().data(item).build());
+	}
+
+	@Operation(description = "Updates the item's highest bid with the provided request. Returns the old, outbid bid")
+	@PutMapping("/{itemId}/update-highest-bid")
+	public ResponseEntity<ApiResponse<UUID>> updateHighestBid(@PathVariable UUID itemId, @RequestBody UpdatedBidRequest request) {
+		var outbidBidId = itemService.updateHighestBidForItem(itemId, request);
+		return ResponseEntity.ok().body(ApiResponse.<UUID>builder().data(outbidBidId).build());
 	}
 }

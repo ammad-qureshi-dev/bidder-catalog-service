@@ -6,8 +6,8 @@ plugins {
 }
 
 group = 'com.bidder'
-version = '0.0.4'
-description = 'updated auction status OPEN to LIVE'
+version = '0.0.5'
+description = 'adding UpdateBidRequest DTO'
 
 java {
     toolchain {

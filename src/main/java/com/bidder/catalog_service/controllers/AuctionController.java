@@ -8,8 +8,6 @@ import java.util.UUID;
 
 import com.bidder.catalog_service.models.response.ApiResponse;
 import com.bidder.catalog_service.services.AuctionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.models.annotations.OpenAPI30;
 import lombok.RequiredArgsConstructor;
 import dtos.request.AuctionRequest;
 import dtos.response.AuctionResponse;
@@ -21,12 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static com.bidder.catalog_service.utils.Constants.Controller.*;
-
-// ToDo: reduce outputs and return summaries for auctions, items
-
 @RestController
-@RequestMapping(BASE_URI_V1 + "/auction")
+@RequestMapping("/api/v1/auction")
 @RequiredArgsConstructor
 public class AuctionController {
 
@@ -34,8 +28,6 @@ public class AuctionController {
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<UUID>> createAuction(@RequestBody AuctionRequest request,
-			// ToDo: derive from validated identity once inter-service auth propagation
-			// (e.g. gateway-forwarded header) is wired up
 			@RequestHeader("X-App-User-Id") UUID appUserId) {
 		var auctionId = auctionService.createAuction(request, appUserId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<UUID>builder().data(auctionId).build());
