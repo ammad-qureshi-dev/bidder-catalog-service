@@ -38,8 +38,10 @@ public class Auction extends BaseEntity {
 	@OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Item> items;
 
+	// 15min intervals, 00, 15, 30, 45
 	@NotNull private LocalDateTime startTime;
 
+	// 15min intervals, 00, 15, 30, 45
 	@NotNull private LocalDateTime endTime;
 
 	@Builder.Default

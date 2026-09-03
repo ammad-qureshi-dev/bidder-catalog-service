@@ -243,10 +243,21 @@ public class AuctionService {
 	}
 
 	private static boolean validateAuctionRequestTime(AuctionRequest request) {
-		if (request.startTime().isBefore(request.endTime())) {
-			return true;
+		var now = LocalDateTime.now();
+
+		if (!request.startTime().isBefore(request.endTime())) {
+			return false;
 		}
 
-		return !request.startTime().isBefore(LocalDateTime.now()) && !request.endTime().isBefore(LocalDateTime.now());
+		if (request.startTime().isBefore(now) || request.endTime().isBefore(now)) {
+			return false;
+		}
+
+		return isOnQuarterHour(request.startTime()) && isOnQuarterHour(request.endTime());
+	}
+
+	private static boolean isOnQuarterHour(LocalDateTime dateTime) {
+		return dateTime.getMinute() % 15 == 0
+				&& dateTime.getSecond() == 0;
 	}
 }
