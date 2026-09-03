@@ -117,9 +117,9 @@ public class AuctionService {
 				return;
 			}
 
-			closeAuction(auction);
-		} else {
-			throw new RuntimeException("Status not supported");
+			auction.setAuctionStatus(status);
+			auctionRepository.save(auction);
+			processCloseAuction(auction);
 		}
 
 		notifyAuctionStatusToOwner(auction);
@@ -141,10 +141,7 @@ public class AuctionService {
 		return items.stream().map(ItemMapper::entityToSummary).toList();
 	}
 
-	private void closeAuction(Auction auction) {
-		auction.setAuctionStatus(AuctionStatus.CLOSED);
-		auctionRepository.save(auction);
-
+	public void processCloseAuction(Auction auction) {
 		// Item <-> bid Id
 		var winnerMap = new HashMap<Item, UUID>();
 		auction.getItems().forEach(i -> {

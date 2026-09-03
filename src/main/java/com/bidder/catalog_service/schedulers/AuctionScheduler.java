@@ -2,46 +2,43 @@
 bidder.app */
 package com.bidder.catalog_service.schedulers;
 
-import java.util.HashSet;
-
-import com.bidder.catalog_service.models.CommsStatus;
 import com.bidder.catalog_service.repository.AuctionRepository;
-import com.bidder.catalog_service.services.CommunicationService;
+import com.bidder.catalog_service.services.AuctionService;
 import lombok.RequiredArgsConstructor;
 import enums.AuctionStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AuctionScheduler {
 
-	private final CommunicationService communicationService;
+	private final AuctionService auctionService;
 	private final AuctionRepository auctionRepository;
 
 	@Transactional
-	@Scheduled(fixedRate = 60000)
-	public void closeAuctions() {
-		final var closedAuctions = auctionRepository.findOpenAndPausedAuctions();
+	@Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
+	public void processExpiringAuctions() {
+		log.debug("scheduler [processExpiringAuctions] -- running");
+		final var expiringAuctions = auctionRepository.getExpiringAuctions();
+		log.debug("scheduler [processExpiringAuctions] -- found {} to be expired auctions", expiringAuctions.size());
 
-		if (closedAuctions.isEmpty()) {
+		if (expiringAuctions.isEmpty()) {
 			return;
 		}
 
-		closedAuctions.forEach(auction -> auction.setAuctionStatus(AuctionStatus.CLOSED));
-		auctionRepository.saveAll(closedAuctions);
+		log.debug("scheduler [processExpiringAuctions] -- closing auctions");
+		expiringAuctions.forEach(auction -> auction.setAuctionStatus(AuctionStatus.CLOSED));
+		auctionRepository.saveAll(expiringAuctions);
+		log.debug("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(), AuctionStatus.CLOSED);
 
-		// ToDo: send comms to auctioneers about auctions closed
-		final var unsentComms = new HashSet<>();
-		closedAuctions.forEach(auction -> {
-
-			var commsStatus = communicationService.sendCommunication(
-					"Your auction " + auction.getTitle() + " - " + auction.getId() + " has been completed.");
-			if (!CommsStatus.SENT.equals(commsStatus)) {
-				// ToDo: add to retry
-				unsentComms.add(auction.getId());
-			}
-		});
+		log.debug("scheduler [processExpiringAuctions] -- processing close auction for {} auctions", expiringAuctions.size());
+		expiringAuctions.forEach(auctionService::processCloseAuction);
+		log.debug("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(), AuctionStatus.CLOSED);
 	}
 }

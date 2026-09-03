@@ -15,12 +15,12 @@ import org.springframework.data.repository.query.Param;
 public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 
 	@Query("""
-			select a
-			from Auction a
-			where a.auctionStatus <> enums.AuctionStatus.CLOSED
-			and a.endTime <= CURRENT_TIMESTAMP
+			select A
+			from Auction A
+			where A.status in ('LIVE', 'PAUSED')
+			and A.endTime <= CURRENT_TIMESTAMP
 			""")
-	List<Auction> findOpenAndPausedAuctions();
+	List<Auction> getExpiringAuctions();
 
 	@Query("""
 			select a
