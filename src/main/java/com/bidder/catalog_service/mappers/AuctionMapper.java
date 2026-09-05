@@ -1,11 +1,11 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.mappers;
 
+import com.bidder.catalog_service.models.Auction;
 import dtos.request.AuctionRequest;
 import dtos.response.AuctionResponse;
 import dtos.response.summary.AuctionSummaryResponse;
-import com.bidder.catalog_service.models.Auction;
 
 public class AuctionMapper {
 

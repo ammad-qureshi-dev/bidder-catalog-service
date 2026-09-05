@@ -1,6 +1,6 @@
 package dtos.request;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import jakarta.validation.constraints.NotNull;
@@ -8,9 +8,9 @@ import enums.AuctionCategory;
 
 public record AuctionRequest(@NotNull String title,
 
-		@NotNull LocalDateTime startTime,
+		@NotNull Instant startTime,
 
-		@NotNull LocalDateTime endTime,
+		@NotNull Instant endTime,
 
 		List<BiddingItemRequest> biddingItems,
 

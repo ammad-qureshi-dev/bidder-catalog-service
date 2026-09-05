@@ -1,8 +1,8 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,10 +14,11 @@ import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 
+	// ToDo: fix EST / UTC time issues --> can result in false closures
 	@Query("""
 			select A
 			from Auction A
-			where A.status in ('LIVE', 'PAUSED')
+			where A.auctionStatus in ('LIVE', 'PAUSED')
 			and A.endTime <= CURRENT_TIMESTAMP
 			""")
 	List<Auction> getExpiringAuctions();
@@ -27,11 +28,11 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 			from Auction a
 			where (cast(:title as string) is null or lower(a.title) like concat('%', lower(cast(:title as string)), '%'))
 			and (cast(:status as string) is null or a.auctionStatus = :status)
-			and (cast(:startAfter as LocalDateTime) is null or a.startTime >= :startAfter)
-			and (cast(:endBefore as LocalDateTime) is null or a.endTime <= :endBefore)
+			and (cast(:startAfter as Instant) is null or a.startTime >= :startAfter)
+			and (cast(:endBefore as Instant) is null or a.endTime <= :endBefore)
 			""")
 	List<Auction> search(@Param("title") String title, @Param("status") AuctionStatus status,
-			@Param("startAfter") LocalDateTime startAfter, @Param("endBefore") LocalDateTime endBefore);
+			@Param("startAfter") Instant startAfter, @Param("endBefore") Instant endBefore);
 
 	@Query("""
 			select a

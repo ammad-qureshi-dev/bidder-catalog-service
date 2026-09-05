@@ -1,8 +1,9 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.services;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -10,17 +11,17 @@ import com.bidder.catalog_service.http_client.BiddingServiceClient;
 import com.bidder.catalog_service.http_client.IdentityAndAuthServiceClient;
 import com.bidder.catalog_service.mappers.AuctionMapper;
 import com.bidder.catalog_service.mappers.ItemMapper;
+import com.bidder.catalog_service.models.Auction;
 import com.bidder.catalog_service.models.Item;
 import com.bidder.catalog_service.repository.AuctionRepository;
 import config.EventTopics;
-import dtos.response.PreferredContactMethod;
-import lombok.RequiredArgsConstructor;
 import dtos.request.AuctionRequest;
 import dtos.response.AuctionResponse;
+import dtos.response.PreferredContactMethod;
 import dtos.response.summary.AuctionSummaryResponse;
 import dtos.response.summary.ItemSummaryResponse;
-import com.bidder.catalog_service.models.Auction;
 import enums.AuctionStatus;
+import lombok.RequiredArgsConstructor;
 import models.TemplateName;
 import models.dtos.request.SendNotificationRequest;
 import models.dtos.response.summary.BidSummaryResponse;
@@ -40,7 +41,6 @@ public class AuctionService {
 	private final BiddingServiceClient biddingService;
 	private final IdentityAndAuthServiceClient identityAndAuthService;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
-
 
 	public UUID createAuction(AuctionRequest request, UUID appUserId) {
 		validationAuctionRequest(request);
@@ -85,15 +85,15 @@ public class AuctionService {
 		return AuctionMapper.entityToResponse(auction);
 	}
 
-	public List<AuctionSummaryResponse> searchAuctions(String title, AuctionStatus status, LocalDateTime startAfter,
-			LocalDateTime endBefore) {
+	public List<AuctionSummaryResponse> searchAuctions(String title, AuctionStatus status, Instant startAfter,
+			Instant endBefore) {
 		return auctionRepository.search(title, status, startAfter, endBefore).stream()
 				.map(AuctionMapper::entityToSummary).toList();
 	}
 
 	private static boolean isAuctionOpen(final Auction auction) {
 		final var currStatus = auction.getAuctionStatus();
-		return !(AuctionStatus.CLOSED.equals(currStatus) || LocalDateTime.now().isAfter(auction.getEndTime()));
+		return !(AuctionStatus.CLOSED.equals(currStatus) || Instant.now().isAfter(auction.getEndTime()));
 	}
 
 	public void updateAuctionStatus(UUID auctionId, AuctionStatus status) {
@@ -167,7 +167,8 @@ public class AuctionService {
 
 		// call auth per bidderId to get contact info
 		var contactMethods = identityAndAuthService.internalGetPreferredContactMethods(bidderIds);
-		var contactMethodsByAppUserId = contactMethods.stream().collect(Collectors.groupingBy(PreferredContactMethod::appUserId));
+		var contactMethodsByAppUserId = contactMethods.stream()
+				.collect(Collectors.groupingBy(PreferredContactMethod::appUserId));
 
 		// per bidder Id send message
 		for (var item : auction.getItems()) {
@@ -177,12 +178,9 @@ public class AuctionService {
 			var auctionUrl = clientUrl + "/auctions/" + item.getAuction().getId();
 
 			kafkaTemplate.send(EventTopics.NOTIFICATION.getTopic(),
-					new SendNotificationRequest(
-							contactInfo.appUserId(),
-							TemplateName.BID_REQUEST_ACCEPTED,
-							Map.of(contactInfo.type(), contactInfo.value()),
-							Map.of("fullName", "user", "itemName", item.getTitle(), "bidAmount", bid.amount(), "auctionUrl", auctionUrl)
-					));
+					new SendNotificationRequest(contactInfo.appUserId(), TemplateName.BID_REQUEST_ACCEPTED,
+							Map.of(contactInfo.type(), contactInfo.value()), Map.of("fullName", "user", "itemName",
+									item.getTitle(), "bidAmount", bid.amount(), "auctionUrl", auctionUrl)));
 		}
 
 	}
@@ -207,29 +205,27 @@ public class AuctionService {
 		switch (currStatus) {
 			case AuctionStatus.CLOSED -> {
 				templateName = TemplateName.AUCTION_CLOSED;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "items", auction.getItems()));
+				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "items",
+						auction.getItems()));
 			}
 
 			case AuctionStatus.LIVE -> {
 				templateName = TemplateName.AUCTION_LIVE;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title", auction.getTitle()));
+				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title",
+						auction.getTitle()));
 			}
 
 			case AuctionStatus.PAUSED -> {
 				templateName = TemplateName.AUCTION_PAUSED;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title", auction.getTitle()));
+				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title",
+						auction.getTitle()));
 			}
 		}
 
-		var notifyRequest = new SendNotificationRequest(
-				auction.getOwnerId(),
-				templateName,
-				recipientConfig,
-				templateData
-		);
+		var notifyRequest = new SendNotificationRequest(auction.getOwnerId(), templateName, recipientConfig,
+				templateData);
 
-		kafkaTemplate.send(EventTopics.NOTIFICATION.getTopic(),
-				notifyRequest);
+		kafkaTemplate.send(EventTopics.NOTIFICATION.getTopic(), notifyRequest);
 	}
 
 	private static void validationAuctionRequest(AuctionRequest request) {
@@ -243,7 +239,7 @@ public class AuctionService {
 	}
 
 	private static boolean validateAuctionRequestTime(AuctionRequest request) {
-		var now = LocalDateTime.now();
+		var now = Instant.now();
 
 		if (!request.startTime().isBefore(request.endTime())) {
 			return false;
@@ -256,8 +252,7 @@ public class AuctionService {
 		return isOnQuarterHour(request.startTime()) && isOnQuarterHour(request.endTime());
 	}
 
-	private static boolean isOnQuarterHour(LocalDateTime dateTime) {
-		return dateTime.getMinute() % 15 == 0
-				&& dateTime.getSecond() == 0;
+	private static boolean isOnQuarterHour(Instant dateTime) {
+		return dateTime.get(ChronoField.MINUTE_OF_HOUR) % 15 == 0 && dateTime.get(ChronoField.SECOND_OF_MINUTE) == 0;
 	}
 }

@@ -18,6 +18,8 @@ spring:
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
+      jdbc:
+        time_zone: UTC
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   output:

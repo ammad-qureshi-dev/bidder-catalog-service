@@ -1,22 +1,22 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.services;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import com.bidder.catalog_service.mappers.ItemMapper;
-import com.bidder.catalog_service.repository.AuctionRepository;
-import com.bidder.catalog_service.repository.ItemRepository;
-import dtos.request.UpdatedBidRequest;
-import enums.AuctionStatus;
-import lombok.RequiredArgsConstructor;
-import dtos.request.BiddingItemRequest;
-import dtos.response.ItemResponse;
 import com.bidder.catalog_service.models.Auction;
 import com.bidder.catalog_service.models.Item;
+import com.bidder.catalog_service.repository.AuctionRepository;
+import com.bidder.catalog_service.repository.ItemRepository;
+import dtos.request.BiddingItemRequest;
+import dtos.request.UpdatedBidRequest;
+import dtos.response.ItemResponse;
+import enums.AuctionStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -67,9 +67,10 @@ public class ItemService {
 			throw new IllegalStateException("Cannot place bid, the auction is " + auction.getAuctionStatus());
 		}
 
-		var now = LocalDateTime.now();
+		var now = Instant.now();
 		if (now.isBefore(auction.getStartTime()) || now.isAfter(auction.getEndTime())) {
-			throw new IllegalStateException("Cannot place bid, the bid is placed out of the range of the auction timing");
+			throw new IllegalStateException(
+					"Cannot place bid, the bid is placed out of the range of the auction timing");
 		}
 	}
 

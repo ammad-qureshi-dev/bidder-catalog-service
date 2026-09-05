@@ -1,4 +1,8 @@
+/* (C) 2026 
+bidder.app */
 package com.bidder.catalog_service.models;
+
+import java.time.Instant;
 
 import jakarta.persistence.MappedSuperclass;
 import lombok.AllArgsConstructor;
@@ -6,7 +10,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -15,8 +18,8 @@ import java.time.LocalDateTime;
 public class BaseEntity {
 
 	@CreationTimestamp
-	private LocalDateTime createdAt;
+	private Instant createdAt;
 
 	@UpdateTimestamp
-	private LocalDateTime updatedAt;
+	private Instant updatedAt;
 }

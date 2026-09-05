@@ -1,17 +1,17 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.schedulers;
 
+import java.util.concurrent.TimeUnit;
+
 import com.bidder.catalog_service.repository.AuctionRepository;
 import com.bidder.catalog_service.services.AuctionService;
-import lombok.RequiredArgsConstructor;
 import enums.AuctionStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -24,21 +24,27 @@ public class AuctionScheduler {
 	@Transactional
 	@Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
 	public void processExpiringAuctions() {
-		log.debug("scheduler [processExpiringAuctions] -- running");
+		log.info("scheduler [processExpiringAuctions] -- running");
 		final var expiringAuctions = auctionRepository.getExpiringAuctions();
-		log.debug("scheduler [processExpiringAuctions] -- found {} to be expired auctions", expiringAuctions.size());
+		log.info("scheduler [processExpiringAuctions] -- found {} to be expired auctions", expiringAuctions.size());
 
 		if (expiringAuctions.isEmpty()) {
 			return;
 		}
 
-		log.debug("scheduler [processExpiringAuctions] -- closing auctions");
+		log.info("scheduler [processExpiringAuctions] -- closing auctions");
 		expiringAuctions.forEach(auction -> auction.setAuctionStatus(AuctionStatus.CLOSED));
 		auctionRepository.saveAll(expiringAuctions);
-		log.debug("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(), AuctionStatus.CLOSED);
+		log.info("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(),
+				AuctionStatus.CLOSED);
 
-		log.debug("scheduler [processExpiringAuctions] -- processing close auction for {} auctions", expiringAuctions.size());
+		log.info("scheduler [processExpiringAuctions] -- processing close auction for {} auctions",
+				expiringAuctions.size());
 		expiringAuctions.forEach(auctionService::processCloseAuction);
-		log.debug("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(), AuctionStatus.CLOSED);
+		log.info("scheduler [processExpiringAuctions] -- set {} auctions to {}", expiringAuctions.size(),
+				AuctionStatus.CLOSED);
 	}
+
+	// ToDo: create scheduler to find UPCOMING events and set to LIVE once they are
+	// ready
 }

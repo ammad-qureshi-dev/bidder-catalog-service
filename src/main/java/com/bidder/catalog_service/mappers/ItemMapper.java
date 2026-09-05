@@ -1,11 +1,11 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.mappers;
 
+import com.bidder.catalog_service.models.Item;
 import dtos.request.BiddingItemRequest;
 import dtos.response.ItemResponse;
 import dtos.response.summary.ItemSummaryResponse;
-import com.bidder.catalog_service.models.Item;
 
 public class ItemMapper {
 

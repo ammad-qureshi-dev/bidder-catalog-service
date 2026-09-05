@@ -1,23 +1,23 @@
-/* (C) 2026
+/* (C) 2026 
 bidder.app */
 package com.bidder.catalog_service.controllers;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.bidder.catalog_service.models.response.ApiResponse;
 import com.bidder.catalog_service.services.AuctionService;
-import lombok.RequiredArgsConstructor;
 import dtos.request.AuctionRequest;
 import dtos.response.AuctionResponse;
 import dtos.response.summary.AuctionSummaryResponse;
 import dtos.response.summary.ItemSummaryResponse;
 import enums.AuctionStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import response.ApiResponse;
 
 @RestController
 @RequestMapping("/api/v1/auction")
@@ -71,8 +71,8 @@ public class AuctionController {
 	@GetMapping("/search")
 	public ResponseEntity<ApiResponse<List<AuctionSummaryResponse>>> searchAuctions(
 			@RequestParam(required = false) String title, @RequestParam(required = false) AuctionStatus status,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startAfter,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endBefore) {
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startAfter,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endBefore) {
 		var results = auctionService.searchAuctions(title, status, startAfter, endBefore);
 		return ResponseEntity.status(HttpStatus.OK)
 				.body(ApiResponse.<List<AuctionSummaryResponse>>builder().data(results).build());

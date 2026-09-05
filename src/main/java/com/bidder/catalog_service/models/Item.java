@@ -1,4 +1,9 @@
+/* (C) 2026 
+bidder.app */
 package com.bidder.catalog_service.models;
+
+import java.math.BigDecimal;
+import java.util.UUID;
 
 import com.bidder.catalog_service.utils.Constants;
 import jakarta.persistence.*;
@@ -6,9 +11,6 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Getter
 @Setter
