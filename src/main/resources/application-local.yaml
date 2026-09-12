@@ -47,7 +47,7 @@ bidding-service:
 
 identity-and-auth-service:
     get-preferred-contact-methods: /api/v1/app-user/internal/contacts/preferred-contact-methods
-    get-user-by-id: /api/v1/app-user/{appUserId}
+    get-user-by-id: /api/v1/app-user
 
 logging:
   level:

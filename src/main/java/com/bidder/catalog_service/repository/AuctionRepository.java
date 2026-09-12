@@ -14,7 +14,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 
-	// ToDo: fix EST / UTC time issues --> can result in false closures
 	@Query("""
 			select A
 			from Auction A
@@ -40,5 +39,13 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 			where a.ownerId = :appUserId
 			""")
 	List<Auction> findMyAuctions(@Param("appUserId") UUID appUserId);
+
+	@Query("""
+			select A
+			from Auction A
+			where A.auctionStatus in ('UPCOMING')
+			and A.startTime <= CURRENT_TIMESTAMP
+			""")
+	List<Auction> getUpcomingAuctions();
 
 }

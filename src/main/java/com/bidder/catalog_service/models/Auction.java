@@ -29,11 +29,8 @@ public class Auction extends BaseEntity {
 	private UUID id;
 
 	@NotNull
-	// @Length(max = 128)
 	private String title;
 
-	// References AppUser.id owned by identity-auth-service; no cross-service JPA
-	// relation
 	@NotNull @Column(name = "owner_id")
 	private UUID ownerId;
 
@@ -46,12 +43,8 @@ public class Auction extends BaseEntity {
 	// 15min intervals, 00, 15, 30, 45
 	@NotNull private Instant endTime;
 
-	@Builder.Default
 	@Enumerated(EnumType.STRING)
-
-	// ToDo: set to LIVE if auction made right now, else set to UPCOMING if
-	// future-dated
-	private AuctionStatus auctionStatus = AuctionStatus.LIVE;
+	private AuctionStatus auctionStatus;
 
 	@ElementCollection(targetClass = AuctionCategory.class, fetch = FetchType.EAGER)
 	@CollectionTable(schema = Constants.Database.SCHEMA, name = "auction_category", joinColumns = @JoinColumn(name = "auction_id"))
@@ -59,9 +52,7 @@ public class Auction extends BaseEntity {
 	@Column(name = "category")
 	private List<AuctionCategory> categories;
 
-	// ToDo: add location
+	private Instant auctionClosedOn;
 
-	// MAJOR TODO --> RESET ALL import java.time.LocalDateTime; TO INSTANT. ADD
-	// import java.time.LocalDateTime; to INSTANT conversion on inputs
-
+//	private Location locationSoldAt;
 }

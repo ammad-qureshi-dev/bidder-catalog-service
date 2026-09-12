@@ -3,7 +3,7 @@ bidder.app */
 package com.bidder.catalog_service.services;
 
 import java.time.Instant;
-import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,10 +43,17 @@ public class AuctionService {
 	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	public UUID createAuction(AuctionRequest request, UUID appUserId) {
+		var isFutureDated = isFutureDated(request.startTime());
+
 		validationAuctionRequest(request);
 
 		final var auction = AuctionMapper.requestToEntity(request);
 		auction.setOwnerId(appUserId);
+
+
+		auction.setAuctionStatus(isFutureDated ? AuctionStatus.UPCOMING : AuctionStatus.LIVE);
+
+
 
 		auctionRepository.save(auction);
 
@@ -118,6 +125,7 @@ public class AuctionService {
 			}
 
 			auction.setAuctionStatus(status);
+			auction.setAuctionClosedOn(Instant.now());
 			auctionRepository.save(auction);
 			processCloseAuction(auction);
 		}
@@ -185,7 +193,7 @@ public class AuctionService {
 
 	}
 
-	private void notifyAuctionStatusToOwner(Auction auction) {
+	public void notifyAuctionStatusToOwner(Auction auction) {
 		var owner = identityAndAuthService.getAppUserById(auction.getOwnerId());
 
 		if (owner.isEmpty()) {
@@ -239,20 +247,22 @@ public class AuctionService {
 	}
 
 	private static boolean validateAuctionRequestTime(AuctionRequest request) {
-		var now = Instant.now();
-
 		if (!request.startTime().isBefore(request.endTime())) {
 			return false;
 		}
 
-		if (request.startTime().isBefore(now) || request.endTime().isBefore(now)) {
-			return false;
+		if (isFutureDated(request.startTime())) {
+			return isOnQuarterHour(request.endTime());
 		}
 
 		return isOnQuarterHour(request.startTime()) && isOnQuarterHour(request.endTime());
 	}
 
 	private static boolean isOnQuarterHour(Instant dateTime) {
-		return dateTime.get(ChronoField.MINUTE_OF_HOUR) % 15 == 0 && dateTime.get(ChronoField.SECOND_OF_MINUTE) == 0;
+		return dateTime.equals(dateTime.truncatedTo(ChronoUnit.MINUTES)) && dateTime.getEpochSecond() % 900 == 0;
+	}
+
+	private static boolean isFutureDated(Instant auctionStartTime) {
+		return auctionStartTime.isAfter(Instant.now());
 	}
 }

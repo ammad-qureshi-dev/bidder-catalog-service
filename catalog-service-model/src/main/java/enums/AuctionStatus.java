@@ -1,5 +1,5 @@
 package enums;
 
 public enum AuctionStatus {
-	LIVE, PAUSED, CLOSED
+	UPCOMING, LIVE, PAUSED, CLOSED
 }

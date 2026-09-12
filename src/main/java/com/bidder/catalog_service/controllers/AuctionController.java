@@ -53,6 +53,7 @@ public class AuctionController {
 		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<AuctionResponse>builder().data(response).build());
 	}
 
+	// ToDo: paginated
 	@GetMapping("/{auctionId}/items")
 	public ResponseEntity<ApiResponse<List<ItemSummaryResponse>>> getAuctionItems(@PathVariable UUID auctionId) {
 		var response = auctionService.getItemsInAuction(auctionId);
@@ -60,6 +61,7 @@ public class AuctionController {
 				.body(ApiResponse.<List<ItemSummaryResponse>>builder().data(response).build());
 	}
 
+	// ToDo: paginated
 	@GetMapping("/my-auctions")
 	public ResponseEntity<ApiResponse<List<AuctionSummaryResponse>>> getMyAuctions(
 			@RequestHeader("X-App-User-Id") UUID appUserId) {
@@ -68,6 +70,7 @@ public class AuctionController {
 				.body(ApiResponse.<List<AuctionSummaryResponse>>builder().data(response).build());
 	}
 
+	// ToDo: paginated
 	@GetMapping("/search")
 	public ResponseEntity<ApiResponse<List<AuctionSummaryResponse>>> searchAuctions(
 			@RequestParam(required = false) String title, @RequestParam(required = false) AuctionStatus status,

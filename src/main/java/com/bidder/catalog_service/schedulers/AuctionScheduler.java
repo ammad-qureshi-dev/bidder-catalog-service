@@ -2,8 +2,6 @@
 bidder.app */
 package com.bidder.catalog_service.schedulers;
 
-import java.util.concurrent.TimeUnit;
-
 import com.bidder.catalog_service.repository.AuctionRepository;
 import com.bidder.catalog_service.services.AuctionService;
 import enums.AuctionStatus;
@@ -22,7 +20,7 @@ public class AuctionScheduler {
 	private final AuctionRepository auctionRepository;
 
 	@Transactional
-	@Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
+	@Scheduled(cron = "0 0/15 * * * *")
 	public void processExpiringAuctions() {
 		log.info("scheduler [processExpiringAuctions] -- running");
 		final var expiringAuctions = auctionRepository.getExpiringAuctions();
@@ -45,6 +43,23 @@ public class AuctionScheduler {
 				AuctionStatus.CLOSED);
 	}
 
-	// ToDo: create scheduler to find UPCOMING events and set to LIVE once they are
-	// ready
+	@Transactional
+	@Scheduled(cron = "0 0/15 * * * *")
+	public void enableLiveAuctions() {
+		log.info("scheduler [enableLiveAuctions] -- running");
+		var upcomingAuctions = auctionRepository.getUpcomingAuctions();
+		log.info("scheduler [enableLiveAuctions] -- {} upcoming auctions found", upcomingAuctions.size());
+
+		if (upcomingAuctions.isEmpty()) {
+			return;
+		}
+
+		upcomingAuctions.forEach(a -> a.setAuctionStatus(AuctionStatus.LIVE));
+		auctionRepository.saveAll(upcomingAuctions);
+		log.info("scheduler [enableLiveAuctions] -- {} upcoming auctions set to {}", upcomingAuctions.size(),
+				AuctionStatus.LIVE);
+
+		upcomingAuctions.forEach(auctionService::notifyAuctionStatusToOwner);
+		log.info("scheduler [enableLiveAuctions] -- auction owners notified");
+	}
 }

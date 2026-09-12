@@ -73,7 +73,7 @@ public class IdentityAndAuthServiceClient {
 
 		var baseUri = props.getIdentityAndAuthUri();
 
-		var url = UriComponentsBuilder.fromUriString(baseUri).path(endpoints.getPreferredContactMethods())
+		var url = UriComponentsBuilder.fromUriString(baseUri).path(endpoints.getUserById())
 				.pathSegment(appUserId.toString()).build().toUriString();
 
 		try {
