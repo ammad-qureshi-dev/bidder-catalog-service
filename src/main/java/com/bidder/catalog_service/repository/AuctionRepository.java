@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import com.bidder.catalog_service.models.Auction;
 import enums.AuctionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,15 +32,15 @@ public interface AuctionRepository extends JpaRepository<Auction, UUID> {
 			and (cast(:startAfter as Instant) is null or a.startTime >= :startAfter)
 			and (cast(:endBefore as Instant) is null or a.endTime <= :endBefore)
 			""")
-	List<Auction> search(@Param("title") String title, @Param("status") AuctionStatus status,
-			@Param("startAfter") Instant startAfter, @Param("endBefore") Instant endBefore);
+	Page<Auction> search(@Param("title") String title, @Param("status") AuctionStatus status,
+			@Param("startAfter") Instant startAfter, @Param("endBefore") Instant endBefore, Pageable pageable);
 
 	@Query("""
 			select a
 			from Auction a
 			where a.ownerId = :appUserId
 			""")
-	List<Auction> findMyAuctions(@Param("appUserId") UUID appUserId);
+	Page<Auction> findMyAuctions(@Param("appUserId") UUID appUserId, Pageable pageable);
 
 	@Query("""
 			select A

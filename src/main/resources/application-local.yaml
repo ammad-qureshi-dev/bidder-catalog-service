@@ -44,6 +44,7 @@ internal-services:
 
 bidding-service:
     search: /api/v1/bid/search
+    bulk-update-bids-statuses: /api/v1/bid/internal/bulk/update-bids-statuses/{status}
 
 identity-and-auth-service:
     get-preferred-contact-methods: /api/v1/app-user/internal/contacts/preferred-contact-methods

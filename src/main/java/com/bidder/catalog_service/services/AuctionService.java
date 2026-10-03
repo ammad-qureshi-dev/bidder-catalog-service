@@ -17,18 +17,24 @@ import com.bidder.catalog_service.repository.AuctionRepository;
 import config.EventTopics;
 import dtos.request.AuctionRequest;
 import dtos.response.AuctionResponse;
+import dtos.response.PageResponse;
 import dtos.response.PreferredContactMethod;
 import dtos.response.summary.AuctionSummaryResponse;
 import dtos.response.summary.ItemSummaryResponse;
 import enums.AuctionStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import models.TemplateName;
 import models.dtos.request.SendNotificationRequest;
 import models.dtos.response.summary.BidSummaryResponse;
+import models.entities.BidStatus;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuctionService {
@@ -50,10 +56,7 @@ public class AuctionService {
 		final var auction = AuctionMapper.requestToEntity(request);
 		auction.setOwnerId(appUserId);
 
-
 		auction.setAuctionStatus(isFutureDated ? AuctionStatus.UPCOMING : AuctionStatus.LIVE);
-
-
 
 		auctionRepository.save(auction);
 
@@ -92,10 +95,11 @@ public class AuctionService {
 		return AuctionMapper.entityToResponse(auction);
 	}
 
-	public List<AuctionSummaryResponse> searchAuctions(String title, AuctionStatus status, Instant startAfter,
-			Instant endBefore) {
-		return auctionRepository.search(title, status, startAfter, endBefore).stream()
-				.map(AuctionMapper::entityToSummary).toList();
+	public PageResponse<AuctionSummaryResponse> searchAuctions(String title, AuctionStatus status, Instant startAfter,
+			Instant endBefore, Pageable pageable) {
+		var auctions = auctionRepository.search(title, status, startAfter, endBefore, pageable)
+				.map(AuctionMapper::entityToSummary);
+		return PageResponse.from(auctions);
 	}
 
 	private static boolean isAuctionOpen(final Auction auction) {
@@ -103,6 +107,7 @@ public class AuctionService {
 		return !(AuctionStatus.CLOSED.equals(currStatus) || Instant.now().isAfter(auction.getEndTime()));
 	}
 
+	@Transactional
 	public void updateAuctionStatus(UUID auctionId, AuctionStatus status) {
 		final var auction = getAuctionById(auctionId);
 		final var currStatus = auction.getAuctionStatus();
@@ -133,9 +138,9 @@ public class AuctionService {
 		notifyAuctionStatusToOwner(auction);
 	}
 
-	public List<AuctionSummaryResponse> getMyAuctions(UUID appUserId) {
-		var auctions = auctionRepository.findMyAuctions(appUserId);
-		return auctions.stream().map(AuctionMapper::entityToSummary).toList();
+	public PageResponse<AuctionSummaryResponse> getMyAuctions(UUID appUserId, Pageable pageable) {
+		var auctions = auctionRepository.findMyAuctions(appUserId, pageable).map(AuctionMapper::entityToSummary);
+		return PageResponse.from(auctions);
 	}
 
 	public List<ItemSummaryResponse> getItemsInAuction(UUID auctionId) {
@@ -150,38 +155,41 @@ public class AuctionService {
 	}
 
 	public void processCloseAuction(Auction auction) {
-		// Item <-> bid Id
-		var winnerMap = new HashMap<Item, UUID>();
-		auction.getItems().forEach(i -> {
-			winnerMap.put(i, i.getHighestBidId());
-		});
-
-		// call /api/v1/bid/search?bidIds=winnerMap.values() to get all the bidderIds
-		var bids = biddingService.searchByBidIds(winnerMap.values().stream().toList());
-
-		// id <-> bid
-		var bidsById = bids.stream().collect(Collectors.groupingBy(BidSummaryResponse::id));
-
-		var biddingInfo = new HashMap<Item, BidSummaryResponse>();
-		for (var item : auction.getItems()) {
-			for (var bid : bids) {
-				if (item.getHighestBidId().equals(bid.id())) {
-					biddingInfo.put(item, bid);
-				}
-			}
+		// items with no bids have a null highestBidId
+		var itemsWithBids = auction.getItems().stream().filter(i -> i.getHighestBidId() != null).toList();
+		if (itemsWithBids.isEmpty()) {
+			notifyAuctionStatusToOwner(auction);
+			return;
 		}
 
-		var bidderIds = biddingInfo.values().stream().map(BidSummaryResponse::bidderId).toList();
+		// call /api/v1/bid/search?bidIds=... to get all the bidderIds
+		var bids = biddingService.searchByBidIds(itemsWithBids.stream().map(Item::getHighestBidId).toList());
+
+		// id <-> bid
+		var bidsById = bids.stream().collect(Collectors.toMap(BidSummaryResponse::id, b -> b, (a, b) -> a));
+
+		biddingService.bulkUpdateBidsStatuses(bidsById.keySet().stream().toList(), BidStatus.WINNER);
+
+		var bidderIds = bids.stream().map(BidSummaryResponse::bidderId).distinct().toList();
 
 		// call auth per bidderId to get contact info
 		var contactMethods = identityAndAuthService.internalGetPreferredContactMethods(bidderIds);
 		var contactMethodsByAppUserId = contactMethods.stream()
-				.collect(Collectors.groupingBy(PreferredContactMethod::appUserId));
+				.collect(Collectors.toMap(PreferredContactMethod::appUserId, c -> c, (a, b) -> a));
 
 		// per bidder Id send message
-		for (var item : auction.getItems()) {
-			var bid = bidsById.get(item.getHighestBidId()).getFirst();
-			var contactInfo = contactMethodsByAppUserId.get(bid.bidderId()).getFirst();
+		for (var item : itemsWithBids) {
+			var bid = bidsById.get(item.getHighestBidId());
+			if (bid == null) {
+				log.warn("Bid {} for item {} not found in bidding-service", item.getHighestBidId(), item.getId());
+				continue;
+			}
+
+			var contactInfo = contactMethodsByAppUserId.get(bid.bidderId());
+			if (contactInfo == null) {
+				log.warn("No contact method found for bidder {}", bid.bidderId());
+				continue;
+			}
 
 			var auctionUrl = clientUrl + "/auctions/" + item.getAuction().getId();
 
@@ -189,6 +197,7 @@ public class AuctionService {
 					new SendNotificationRequest(contactInfo.appUserId(), TemplateName.BID_REQUEST_ACCEPTED,
 							Map.of(contactInfo.type(), contactInfo.value()), Map.of("fullName", "user", "itemName",
 									item.getTitle(), "bidAmount", bid.amount(), "auctionUrl", auctionUrl)));
+
 		}
 
 	}

@@ -10,6 +10,7 @@ import com.bidder.catalog_service.config.ExternalServiceProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import models.dtos.response.summary.BidSummaryResponse;
+import models.entities.BidStatus;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -32,11 +33,13 @@ public class BiddingServiceClient {
 			return Collections.emptyList();
 		}
 
-		var baseUri = props.getBiddingServiceUri();
-		var ids = bidIds.stream().map(UUID::toString).collect(Collectors.joining(","));
+		var bidIdsQueryParam = generateListQueryParam(bidIds);
+		if (bidIdsQueryParam.isEmpty()) {
+			return Collections.emptyList();
+		}
 
-		var url = UriComponentsBuilder.fromUriString(baseUri).path(endpoints.search()).queryParam("bidIds", ids).build()
-				.toUriString();
+		var url = UriComponentsBuilder.fromUriString(props.getBiddingServiceUri()).path(endpoints.search())
+				.queryParam("bidIds", bidIdsQueryParam).build().toUriString();
 
 		try {
 			log.info("Calling {}", url);
@@ -57,4 +60,40 @@ public class BiddingServiceClient {
 		}
 	}
 
+	public void bulkUpdateBidsStatuses(List<UUID> bidIds, BidStatus status) {
+		if (bidIds == null || bidIds.isEmpty()) {
+			log.info("No bidIds provided for bulkUpdateBidsStatuses");
+			return;
+		}
+
+		var bidIdsQueryParam = generateListQueryParam(bidIds);
+		if (bidIdsQueryParam.isEmpty()) {
+			return;
+		}
+
+		var url = UriComponentsBuilder.fromUriString(props.getBiddingServiceUri())
+				.path(endpoints.search())
+				.queryParam("bidIds", bidIdsQueryParam)
+				.buildAndExpand(status)
+				.toUriString();
+
+		log.info("Calling {}", url);
+		var response = restClient.get().uri(url).retrieve()
+				.body(new ParameterizedTypeReference<ApiResponse<List<BidSummaryResponse>>>() {
+				});
+
+		if (response == null) {
+			log.error("Response was null for request {}", url);
+			throw new RuntimeException(
+					"No response received from bidding-service. Please check logs");
+		}
+	}
+
+	private static String generateListQueryParam(List<?> items) {
+		if (items == null || items.isEmpty()) {
+			return "";
+		}
+
+		return items.stream().filter(Objects::nonNull).map(Object::toString).collect(Collectors.joining(","));
+	}
 }

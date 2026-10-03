@@ -2,6 +2,7 @@
 bidder.app */
 package com.bidder.catalog_service.services;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -47,12 +48,18 @@ public class ItemService {
 		var item = getItemById(itemId);
 		var oldBidId = item.getHighestBidId();
 
+		// bidId is null when there is absolutely no highest bid remaining
+		if (request.bidId() == null) {
+			setHighestBidData(item, null, BigDecimal.ZERO);
+			itemRepository.save(item);
+			return oldBidId;
+		}
+
 		validateBidRequest(request, item);
 		validateAuctionRequest(item.getAuction(), request);
 
-		item.setHighestBidId(request.bidId());
-		item.setHighestBidAmount(request.amount());
-
+		// ToDo: set to most recent amount, bug where the new amount is still an invalid amount of the prev rejected amount
+		setHighestBidData(item, request.bidId(), request.amount());
 		itemRepository.save(item);
 
 		return oldBidId;
@@ -98,5 +105,10 @@ public class ItemService {
 		}
 
 		return request.amount().compareTo(item.getMinimumPrice()) > -1;
+	}
+
+	private void setHighestBidData(Item item, UUID highestBidId, BigDecimal highestBidAmount) {
+		item.setHighestBidId(highestBidId);
+		item.setHighestBidAmount(highestBidAmount);
 	}
 }

@@ -26,6 +26,16 @@ public class ItemController {
 		return ResponseEntity.ok().body(ApiResponse.<ItemResponse>builder().data(item).build());
 	}
 
+	// ToDo: [SECURITY CONCERN] -- bidderId, bidId, and amount in UpdatedBidRequest
+	// are entirely client-supplied
+	// and are never cross-checked against bidding-service (the system of record for
+	// bids). Combined with no
+	// authentication, any caller can forge a winning bid for an item with an
+	// arbitrary bidId/bidderId/amount
+	// without ever having placed a real bid.
+	// ToDo: [SECURITY CONCERN] -- @RequestBody is not annotated with @Valid, so the
+	// @NotNull constraints declared
+	// on UpdatedBidRequest are never enforced.
 	@Operation(description = "Updates the item's highest bid with the provided request. Returns the old, outbid bid")
 	@PutMapping("/{itemId}/update-highest-bid")
 	public ResponseEntity<ApiResponse<UUID>> updateHighestBid(@PathVariable UUID itemId,

@@ -28,8 +28,7 @@ public class Auction extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@NotNull
-	private String title;
+	@NotNull private String title;
 
 	@NotNull @Column(name = "owner_id")
 	private UUID ownerId;
@@ -54,5 +53,5 @@ public class Auction extends BaseEntity {
 
 	private Instant auctionClosedOn;
 
-//	private Location locationSoldAt;
+	// private Location locationSoldAt;
 }

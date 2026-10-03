@@ -8,8 +8,12 @@ import java.util.UUID;
 public record UpdatedBidRequest(
         @NotNull UUID auctionId,
         @NotNull UUID itemId,
-        @NotNull UUID bidderId,
-        @NotNull UUID bidId,
-        @NotNull BigDecimal amount
+
+        UUID bidderId,
+        UUID bidId,
+        BigDecimal amount,
+
+        // ToDo: set the previousBidAmount when a bid gets rejected
+        BigDecimal prevBidAmount
         ) {
 }
