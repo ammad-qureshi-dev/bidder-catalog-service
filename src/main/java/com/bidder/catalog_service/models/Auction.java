@@ -10,8 +10,11 @@ import com.bidder.catalog_service.utils.Constants;
 import enums.AuctionCategory;
 import enums.AuctionStatus;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -53,5 +56,8 @@ public class Auction extends BaseEntity {
 
 	private Instant auctionClosedOn;
 
-	// private Location locationSoldAt;
+	@NotNull @Valid
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "pickup_location", columnDefinition = "jsonb", nullable = false)
+	private PickupLocation pickupLocation;
 }

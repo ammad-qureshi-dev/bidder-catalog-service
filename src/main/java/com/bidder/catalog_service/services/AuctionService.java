@@ -8,24 +8,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.bidder.catalog_service.http_client.BiddingServiceClient;
-import com.bidder.catalog_service.http_client.IdentityAndAuthServiceClient;
 import com.bidder.catalog_service.mappers.AuctionMapper;
 import com.bidder.catalog_service.mappers.ItemMapper;
+import com.bidder.catalog_service.mappers.PickupLocationMapper;
 import com.bidder.catalog_service.models.Auction;
 import com.bidder.catalog_service.models.Item;
 import com.bidder.catalog_service.repository.AuctionRepository;
 import config.EventTopics;
 import dtos.request.AuctionRequest;
+import dtos.request.PickupLocationRequest;
 import dtos.response.AuctionResponse;
 import dtos.response.PageResponse;
-import dtos.response.PreferredContactMethod;
 import dtos.response.summary.AuctionSummaryResponse;
 import dtos.response.summary.ItemSummaryResponse;
 import enums.AuctionStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import models.TemplateName;
-import models.dtos.request.SendNotificationRequest;
+import models.dtos.request.NotifyRequest;
 import models.dtos.response.summary.BidSummaryResponse;
 import models.entities.BidStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +33,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.bidder.catalog_service.utils.Constants.AUCTION_URL;
 
 @Slf4j
 @Service
@@ -45,7 +47,6 @@ public class AuctionService {
 	private final AuctionRepository auctionRepository;
 	private final ItemService itemService;
 	private final BiddingServiceClient biddingService;
-	private final IdentityAndAuthServiceClient identityAndAuthService;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	public UUID createAuction(AuctionRequest request, UUID appUserId) {
@@ -73,6 +74,7 @@ public class AuctionService {
 		auction.setStartTime(request.startTime());
 		auction.setEndTime(request.endTime());
 		auction.setCategories(request.categories());
+		auction.setPickupLocation(PickupLocationMapper.requestToEntity(request.pickupLocation()));
 
 		final var newItems = request.biddingItems().stream().filter(e -> e.id() == null).toList().stream()
 				.map(ItemMapper::requestToEntity).toList();
@@ -154,6 +156,12 @@ public class AuctionService {
 		return items.stream().map(ItemMapper::entityToSummary).toList();
 	}
 
+	/*
+	 * test: > close auction > ammadq3 - auctioner owner > ammadq87 - highest bidder
+	 * > ammadq87 should receive email for bid accepted > ammadq3 should receive
+	 * email for auction closed
+	 */
+
 	public void processCloseAuction(Auction auction) {
 		// items with no bids have a null highestBidId
 		var itemsWithBids = auction.getItems().stream().filter(i -> i.getHighestBidId() != null).toList();
@@ -170,13 +178,6 @@ public class AuctionService {
 
 		biddingService.bulkUpdateBidsStatuses(bidsById.keySet().stream().toList(), BidStatus.WINNER);
 
-		var bidderIds = bids.stream().map(BidSummaryResponse::bidderId).distinct().toList();
-
-		// call auth per bidderId to get contact info
-		var contactMethods = identityAndAuthService.internalGetPreferredContactMethods(bidderIds);
-		var contactMethodsByAppUserId = contactMethods.stream()
-				.collect(Collectors.toMap(PreferredContactMethod::appUserId, c -> c, (a, b) -> a));
-
 		// per bidder Id send message
 		for (var item : itemsWithBids) {
 			var bid = bidsById.get(item.getHighestBidId());
@@ -185,62 +186,40 @@ public class AuctionService {
 				continue;
 			}
 
-			var contactInfo = contactMethodsByAppUserId.get(bid.bidderId());
-			if (contactInfo == null) {
-				log.warn("No contact method found for bidder {}", bid.bidderId());
-				continue;
-			}
-
-			var auctionUrl = clientUrl + "/auctions/" + item.getAuction().getId();
+			var auctionUrl = generateAuctionUrl(item.getAuction().getId());
 
 			kafkaTemplate.send(EventTopics.NOTIFICATION.getTopic(),
-					new SendNotificationRequest(contactInfo.appUserId(), TemplateName.BID_REQUEST_ACCEPTED,
-							Map.of(contactInfo.type(), contactInfo.value()), Map.of("fullName", "user", "itemName",
-									item.getTitle(), "bidAmount", bid.amount(), "auctionUrl", auctionUrl)));
-
+					new NotifyRequest(bid.bidderId(), TemplateName.BID_REQUEST_ACCEPTED, null,
+							Map.of("itemName", item.getTitle(), "bidAmount", bid.amount(), AUCTION_URL, auctionUrl)));
 		}
-
 	}
 
 	public void notifyAuctionStatusToOwner(Auction auction) {
-		var owner = identityAndAuthService.getAppUserById(auction.getOwnerId());
-
-		if (owner.isEmpty()) {
-			throw new NoSuchElementException("Owner not found for this auction");
-		}
-
-		var ownerInfo = owner.get();
-
-		var recipientConfig = Map.of(ownerInfo.contact().type(), ownerInfo.contact().value());
-
 		var templateData = new HashMap<String, Object>();
 		TemplateName templateName = null;
 
-		var auctionUrl = clientUrl + "/auctions/" + auction.getId();
-
 		var currStatus = auction.getAuctionStatus();
+		var auctionUrl = generateAuctionUrl(auction.getId());
+
 		switch (currStatus) {
 			case AuctionStatus.CLOSED -> {
 				templateName = TemplateName.AUCTION_CLOSED;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "items",
-						auction.getItems()));
+				templateData = new HashMap<>(Map.of(AUCTION_URL, auctionUrl, "items",
+						auction.getItems().stream().map(ItemMapper::entityToResponse).toList()));
 			}
 
 			case AuctionStatus.LIVE -> {
 				templateName = TemplateName.AUCTION_LIVE;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title",
-						auction.getTitle()));
+				templateData = new HashMap<>(Map.of(AUCTION_URL, auctionUrl, "title", auction.getTitle()));
 			}
 
 			case AuctionStatus.PAUSED -> {
 				templateName = TemplateName.AUCTION_PAUSED;
-				templateData = new HashMap<>(Map.of("fullName", ownerInfo.fullName(), "auctionUrl", auctionUrl, "title",
-						auction.getTitle()));
+				templateData = new HashMap<>(Map.of(AUCTION_URL, auctionUrl, "title", auction.getTitle()));
 			}
 		}
 
-		var notifyRequest = new SendNotificationRequest(auction.getOwnerId(), templateName, recipientConfig,
-				templateData);
+		var notifyRequest = new NotifyRequest(auction.getOwnerId(), templateName, null, templateData);
 
 		kafkaTemplate.send(EventTopics.NOTIFICATION.getTopic(), notifyRequest);
 	}
@@ -253,6 +232,20 @@ public class AuctionService {
 		if (request.biddingItems() == null || request.biddingItems().isEmpty()) {
 			throw new RuntimeException("Auction should have at least one bidding item");
 		}
+
+		if (!isValidPickupLocation(request.pickupLocation())) {
+			throw new RuntimeException("Auction should have a pickup location with all fields provided");
+		}
+	}
+
+	private static boolean isValidPickupLocation(PickupLocationRequest location) {
+		return location != null && location.unit() != null && isNotBlank(location.street())
+				&& isNotBlank(location.city()) && isNotBlank(location.postalCode()) && isNotBlank(location.state())
+				&& isNotBlank(location.country());
+	}
+
+	private static boolean isNotBlank(String value) {
+		return value != null && !value.isBlank();
 	}
 
 	private static boolean validateAuctionRequestTime(AuctionRequest request) {
@@ -273,5 +266,9 @@ public class AuctionService {
 
 	private static boolean isFutureDated(Instant auctionStartTime) {
 		return auctionStartTime.isAfter(Instant.now());
+	}
+
+	private String generateAuctionUrl(UUID auctionId) {
+		return clientUrl + "/auctions/" + auctionId;
 	}
 }

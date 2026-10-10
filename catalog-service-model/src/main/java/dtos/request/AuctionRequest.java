@@ -3,6 +3,7 @@ package dtos.request;
 import java.time.Instant;
 import java.util.List;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import enums.AuctionCategory;
 
@@ -14,5 +15,7 @@ public record AuctionRequest(@NotNull String title,
 
 		List<BiddingItemRequest> biddingItems,
 
-		List<AuctionCategory> categories) {
+		List<AuctionCategory> categories,
+
+		@NotNull @Valid PickupLocationRequest pickupLocation) {
 }

@@ -71,11 +71,8 @@ public class BiddingServiceClient {
 			return;
 		}
 
-		var url = UriComponentsBuilder.fromUriString(props.getBiddingServiceUri())
-				.path(endpoints.search())
-				.queryParam("bidIds", bidIdsQueryParam)
-				.buildAndExpand(status)
-				.toUriString();
+		var url = UriComponentsBuilder.fromUriString(props.getBiddingServiceUri()).path(endpoints.search())
+				.queryParam("bidIds", bidIdsQueryParam).buildAndExpand(status).toUriString();
 
 		log.info("Calling {}", url);
 		var response = restClient.get().uri(url).retrieve()
@@ -84,8 +81,7 @@ public class BiddingServiceClient {
 
 		if (response == null) {
 			log.error("Response was null for request {}", url);
-			throw new RuntimeException(
-					"No response received from bidding-service. Please check logs");
+			throw new RuntimeException("No response received from bidding-service. Please check logs");
 		}
 	}
 

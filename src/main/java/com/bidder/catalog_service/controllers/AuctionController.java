@@ -71,7 +71,7 @@ public class AuctionController {
 		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<UUID>builder().data(auctionId).build());
 	}
 
-	@GetMapping("/{auctionId}")
+	@GetMapping("/view/{auctionId}")
 	public ResponseEntity<ApiResponse<AuctionResponse>> getAuction(@PathVariable UUID auctionId) {
 		var response = auctionService.getAuctionResponse(auctionId);
 		return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<AuctionResponse>builder().data(response).build());

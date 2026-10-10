@@ -58,7 +58,8 @@ public class ItemService {
 		validateBidRequest(request, item);
 		validateAuctionRequest(item.getAuction(), request);
 
-		// ToDo: set to most recent amount, bug where the new amount is still an invalid amount of the prev rejected amount
+		// ToDo: set to most recent amount, bug where the new amount is still an invalid
+		// amount of the prev rejected amount
 		setHighestBidData(item, request.bidId(), request.amount());
 		itemRepository.save(item);
 
