@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Length;
 
 @Data
 @AllArgsConstructor
@@ -31,4 +32,7 @@ public class PickupLocation {
 
 	@NotBlank
 	private String country;
+
+	// optional free-text pickup instructions
+	@Length(max = 512) private String instructions;
 }

@@ -14,7 +14,8 @@ public class PickupLocationMapper {
 		}
 
 		return PickupLocation.builder().unit(request.unit()).street(request.street()).city(request.city())
-				.postalCode(request.postalCode()).state(request.state()).country(request.country()).build();
+				.postalCode(request.postalCode()).state(request.state()).country(request.country())
+				.instructions(request.instructions()).build();
 	}
 
 	public static PickupLocationResponse entityToResponse(PickupLocation entity) {
@@ -23,6 +24,6 @@ public class PickupLocationMapper {
 		}
 
 		return new PickupLocationResponse(entity.getUnit(), entity.getStreet(), entity.getCity(),
-				entity.getPostalCode(), entity.getState(), entity.getCountry());
+				entity.getPostalCode(), entity.getState(), entity.getCountry(), entity.getInstructions());
 	}
 }

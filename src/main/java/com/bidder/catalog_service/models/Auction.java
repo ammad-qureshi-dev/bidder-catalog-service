@@ -56,8 +56,10 @@ public class Auction extends BaseEntity {
 
 	private Instant auctionClosedOn;
 
-	@NotNull @Valid
+	// nullable at the DB level so existing auctions don't break schema updates;
+	// presence is enforced in AuctionService on create/update
+	@Valid
 	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(name = "pickup_location", columnDefinition = "jsonb", nullable = false)
+	@Column(name = "pickup_location", columnDefinition = "jsonb")
 	private PickupLocation pickupLocation;
 }
