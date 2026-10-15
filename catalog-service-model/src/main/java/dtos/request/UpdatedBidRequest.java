@@ -11,9 +11,6 @@ public record UpdatedBidRequest(
 
         UUID bidderId,
         UUID bidId,
-        BigDecimal amount,
-
-        // ToDo: set the previousBidAmount when a bid gets rejected
-        BigDecimal prevBidAmount
+        BigDecimal amount
         ) {
 }

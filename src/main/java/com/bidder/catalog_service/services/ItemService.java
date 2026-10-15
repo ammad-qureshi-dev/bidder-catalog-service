@@ -4,7 +4,6 @@ package com.bidder.catalog_service.services;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -13,7 +12,7 @@ import com.bidder.catalog_service.models.Auction;
 import com.bidder.catalog_service.models.Item;
 import com.bidder.catalog_service.repository.AuctionRepository;
 import com.bidder.catalog_service.repository.ItemRepository;
-import dtos.request.BiddingItemRequest;
+import dtos.request.AcceptingBidsRequest;
 import dtos.request.UpdatedBidRequest;
 import dtos.response.ItemResponse;
 import enums.AuctionStatus;
@@ -27,14 +26,6 @@ public class ItemService {
 	private final ItemRepository itemRepository;
 	private final AuctionRepository auctionRepository;
 
-	public void createItems(List<BiddingItemRequest> itemsRequest, Auction auction) {
-
-		final var items = itemsRequest.stream().map(ItemMapper::requestToEntity).toList();
-
-		items.forEach(e -> e.setAuction(auction));
-		itemRepository.saveAll(items);
-	}
-
 	public ItemResponse getItem(UUID id) {
 		var item = getItemById(id);
 		return ItemMapper.entityToResponse(item);
@@ -44,8 +35,28 @@ public class ItemService {
 		return itemRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Item not found"));
 	}
 
+	public boolean acceptingBids(UUID itemId, AcceptingBidsRequest request) {
+		var itemResult = itemRepository.findById(itemId);
+
+		if (itemResult.isEmpty()) {
+			throw new IllegalStateException("Item does not exist");
+		}
+
+		var item = itemResult.get();
+
+		item.setAcceptingBids(request.acceptingBids());
+		itemRepository.save(item);
+
+		return item.isAcceptingBids();
+	}
+
 	public UUID updateHighestBidForItem(UUID itemId, UpdatedBidRequest request) {
 		var item = getItemById(itemId);
+
+		if (!item.isAcceptingBids()) {
+			return null;
+		}
+
 		var oldBidId = item.getHighestBidId();
 
 		// bidId is null when there is absolutely no highest bid remaining

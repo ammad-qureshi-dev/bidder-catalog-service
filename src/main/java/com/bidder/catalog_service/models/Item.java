@@ -44,6 +44,9 @@ public class Item extends BaseEntity {
 	private UUID highestBidId;
 	private BigDecimal highestBidAmount;
 
+	@Builder.Default
+	private boolean acceptingBids = true;
+
 	// For optimistic locking
 	@Version
 	private Long version;

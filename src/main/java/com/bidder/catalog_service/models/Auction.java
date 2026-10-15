@@ -48,10 +48,10 @@ public class Auction extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private AuctionStatus auctionStatus;
 
-	@ElementCollection(targetClass = AuctionCategory.class, fetch = FetchType.EAGER)
-	@CollectionTable(schema = Constants.Database.SCHEMA, name = "auction_category", joinColumns = @JoinColumn(name = "auction_id"))
+	// stored as a native text[] so category filters can use a GIN index (@> / &&)
 	@Enumerated(EnumType.STRING)
-	@Column(name = "category")
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "categories", columnDefinition = "text[]")
 	private List<AuctionCategory> categories;
 
 	private Instant auctionClosedOn;

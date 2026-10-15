@@ -5,6 +5,7 @@ package com.bidder.catalog_service.controllers;
 import java.util.UUID;
 
 import com.bidder.catalog_service.services.ItemService;
+import dtos.request.AcceptingBidsRequest;
 import dtos.request.UpdatedBidRequest;
 import dtos.response.ItemResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +25,11 @@ public class ItemController {
 	public ResponseEntity<ApiResponse<ItemResponse>> getItem(@PathVariable UUID itemId) {
 		var item = itemService.getItem(itemId);
 		return ResponseEntity.ok().body(ApiResponse.<ItemResponse>builder().data(item).build());
+	}
+
+	@PutMapping("/{itemId}/accepting-bids")
+	public ResponseEntity<ApiResponse<?>> acceptingBids(@PathVariable UUID itemId, @RequestBody AcceptingBidsRequest request) {
+		return ResponseEntity.ok().body(ApiResponse.<Boolean>builder().data(itemService.acceptingBids(itemId, request)).build());
 	}
 
 	// ToDo: [SECURITY CONCERN] -- bidderId, bidId, and amount in UpdatedBidRequest

@@ -1,7 +1,13 @@
 spring:
   application:
     name: catalog-service
+  profiles:
+    # Used when no profile is set; run locally with SPRING_PROFILES_ACTIVE=local
+    default: prod
   data:
     web:
       pageable:
         max-page-size: 25
+server:
+  # Render injects PORT
+  port: ${PORT:8082}

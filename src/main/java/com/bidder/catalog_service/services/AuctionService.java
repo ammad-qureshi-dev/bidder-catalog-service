@@ -45,7 +45,6 @@ public class AuctionService {
 	private String clientUrl;
 
 	private final AuctionRepository auctionRepository;
-	private final ItemService itemService;
 	private final BiddingServiceClient biddingService;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -56,12 +55,12 @@ public class AuctionService {
 
 		final var auction = AuctionMapper.requestToEntity(request);
 		auction.setOwnerId(appUserId);
+		auction.getItems().forEach(i -> i.setAuction(auction));
 
 		auction.setAuctionStatus(isFutureDated ? AuctionStatus.UPCOMING : AuctionStatus.LIVE);
 
+		// items are persisted via cascade
 		auctionRepository.save(auction);
-
-		itemService.createItems(request.biddingItems(), auction);
 
 		return auction.getId();
 	}
