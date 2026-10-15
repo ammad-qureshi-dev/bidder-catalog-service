@@ -28,8 +28,10 @@ public class ItemController {
 	}
 
 	@PutMapping("/{itemId}/accepting-bids")
-	public ResponseEntity<ApiResponse<?>> acceptingBids(@PathVariable UUID itemId, @RequestBody AcceptingBidsRequest request) {
-		return ResponseEntity.ok().body(ApiResponse.<Boolean>builder().data(itemService.acceptingBids(itemId, request)).build());
+	public ResponseEntity<ApiResponse<?>> acceptingBids(@PathVariable UUID itemId,
+			@RequestBody AcceptingBidsRequest request) {
+		return ResponseEntity.ok()
+				.body(ApiResponse.<Boolean>builder().data(itemService.acceptingBids(itemId, request)).build());
 	}
 
 	// ToDo: [SECURITY CONCERN] -- bidderId, bidId, and amount in UpdatedBidRequest
